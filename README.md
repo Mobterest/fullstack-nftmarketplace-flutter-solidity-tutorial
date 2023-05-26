@@ -20,7 +20,7 @@ To deploy this project run
 
 
 ## 🔗 Links
-[![linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://katherineoelsner.com/)
+[![linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://linktr.ee/mobterest)
 
 ## Support
 
