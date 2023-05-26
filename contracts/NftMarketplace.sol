@@ -60,12 +60,17 @@ contract SubscriptionModel {
 }
 
 contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
-    constructor() ERC721("NFT Magazine Subscription", "MAG") {}
+    
 
     using Counters for Counters.Counter;
     Counters.Counter private tokenIds;
     Counters.Counter private nftsAvailableForSale;
     Counters.Counter private userIds;
+
+    constructor() ERC721("NFT Magazine Subscription", "MAG") {
+        tokenIds.increment();
+        userIds.increment();
+    }
 
     struct nftStruct {
         uint256 tokenId;
@@ -76,6 +81,7 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
         uint256 likes;
         string title;
         string description;
+        string tokenUri;
     }
     struct profileStruct {
         address self;
@@ -83,7 +89,13 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
         address[] following;
     }
     mapping(uint256 => nftStruct) private nfts;
-    mapping(uint256 => profileStruct) private profiles;
+    mapping(uint256 => profileStruct) public profiles;
+
+    function getNumberOfUsers() public view returns(uint256){
+        uint256 noOfUsers = userIds.current();
+        return noOfUsers;
+    }
+
     event NftStructCreated(
         uint256 indexed tokenId,
         address payable seller,
@@ -95,17 +107,25 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
         string description
     );
 
+    //nftStruct[] public nftSubscriptions;
+
     function setNft(
         uint256 _tokenId,
         string memory _title,
-        string memory _description
+        string memory _description,
+        string memory _tokenURI
     ) private {
+
         nfts[_tokenId].tokenId = _tokenId;
         nfts[_tokenId].seller = payable(msg.sender);
         nfts[_tokenId].owner = payable(msg.sender);
         nfts[_tokenId].price = 0;
-        nfts[_tokenId].subscribers = [msg.sender];
         nfts[_tokenId].likes = 1;
+        nfts[_tokenId].title = _title;
+        nfts[_tokenId].description = _description;
+        nfts[_tokenId].tokenUri = _tokenURI;
+
+
         emit NftStructCreated(
             _tokenId,
             payable(msg.sender),
@@ -122,34 +142,33 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
     /// @param _tokenURI the new token URI for the magazine cover
     /// @param _title the name of the magazine cover
     /// @param _description detailed information on the magazine NFT
-    /// @return tokenId of the created NFT
+    // /// @return tokenId of the created NFT
     function createNft(
         string memory _tokenURI,
         string memory _title,
         string memory _description
-    ) public returns (uint256) {
-        tokenIds.increment();
+    ) public  {
+        
         uint256 newTokenId = tokenIds.current();
         _mint(msg.sender, newTokenId);
         _setTokenURI(newTokenId, _tokenURI);
-        setNft(newTokenId, _title, _description);
-        return newTokenId;
+        setNft(newTokenId, _title, _description, _tokenURI);
+        tokenIds.increment();
     }
 
     /// @dev sell a magazine subscription to the public so that's visible to the nft marketplace
     /// @param _tokenId the TokenID od the Nft Magazine
-    /// @param _price the price for the magazine subscription
-    /// @return total number of available nft subscriptions
+    // /// @param _price the price for the magazine subscription
+    // /// @return total number of available nft subscriptions
     function sellSubscription(
-        uint256 _tokenId,
-        uint256 _price
-    ) public returns (uint256) {
+        uint256 _tokenId
+    ) public payable returns (uint256) {
         require(
             _isApprovedOrOwner(msg.sender, _tokenId),
             "Only NFT owner can perform this"
         );
         _transfer(msg.sender, address(this), _tokenId);
-        nfts[_tokenId].price = _price;
+        nfts[_tokenId].price = msg.value / (1 ether);
         nfts[_tokenId].owner = payable(address(this));
         nftsAvailableForSale.increment();
         return nftsAvailableForSale.current();
@@ -159,11 +178,11 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
     /// @param _tokenId the Token ID of the NFT Magazine
     /// @return true
     function buySubscription(uint256 _tokenId) public payable returns (bool) {
-        uint256 price = nfts[_tokenId].price;
-        require(
-            msg.value == price,
-            "Please send the asking price in order to complete the purchase"
-        );
+        // uint256 price = nfts[_tokenId].price;
+        // require(
+        //     msg.value == price,
+        //     "Please send the asking price in order to complete the purchase"
+        // );
 
         payable(nfts[_tokenId].seller).transfer(msg.value);
         nfts[_tokenId].subscribers.push(msg.sender);
@@ -173,48 +192,46 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
     /// @dev fetch available NFTs on sale that will be displayed on the marketplace
     /// return nftStruct[] list of nfts with their metadata
     function getSubscriptions() public view returns (nftStruct[] memory) {
-        uint256 subscriptions = nftsAvailableForSale.current();
         uint256 nftCount = tokenIds.current();
-
-        nftStruct[] memory nftSubscriptions = new nftStruct[](subscriptions);
+        nftStruct[] memory nftSubs = new nftStruct[](nftCount);
         for (uint256 i = 1; i < nftCount; i++) {
             if (nfts[i].owner == address(this)) {
-                nftSubscriptions[i] = nfts[i];
+                nftSubs[i] = nfts[i];
             }
         }
-        return nftSubscriptions;
+        return nftSubs;
     }
 
     /// @dev fetches NFT magazines that a specific user is already subscribed to
     /// return nftStruct[] list of the nfts collected by a user with their metadata
     function getCollectables() public view returns (nftStruct[] memory) {
         uint256 nftCount = tokenIds.current();
-        nftStruct[] memory nftSubscriptions;
+        nftStruct[] memory nftSubs = new nftStruct[](nftCount);
 
         for (uint256 i = 1; i < nftCount; i++) {
             uint256 subscribers = nfts[i].subscribers.length;
             for (uint256 j = 0; j < subscribers; j++) {
                 if (nfts[i].subscribers[j] == msg.sender) {
-                    nftSubscriptions[i] = nfts[i];
+                    nftSubs[i] = nfts[i];
                 }
             }
         }
 
-        return nftSubscriptions;
+        return nftSubs;
     }
 
     /// @dev fetches NFT magazines that a specific user has created
     ///@return nftStruct[] list of nfts created by a user with their metadata
     function getNfts() public view returns (nftStruct[] memory) {
         uint256 nftCount = tokenIds.current();
-        nftStruct[] memory nftSubscriptions;
+        nftStruct[] memory nftSubs = new nftStruct[](nftCount);
         for (uint256 i = 1; i < nftCount; i++) {
-            if (nfts[i].seller == msg.sender) {
-                nftSubscriptions[i] = nfts[1];
+            if (nfts[i].seller == payable(msg.sender)) {
+                nftSubs[i] = nfts[i];
             }
         }
 
-        return nftSubscriptions;
+        return nftSubs;
     }
 
     /// @dev fetches details of a particular NFT magazine subscription
@@ -228,13 +245,17 @@ contract NftMarketplace is SubscriptionModel, ERC721URIStorage {
 
     ///@notice this respresents user onboarding
     /// @dev adds msg.sender as the profile
-    /// @return userId and balance of msg.sender
-    function addProfile() public returns (uint256 userId, uint256 balance) {
-        userIds.increment();
+    function addProfile() public {
         uint256 newUserId = userIds.current();
-        profiles[newUserId].self = msg.sender;
-        userId = newUserId;
-        balance = msg.sender.balance;
+        bool checkIfExists = false;
+        for(uint256 i = 1; i < newUserId; i++) {
+            if(profiles[i].self == msg.sender)
+            checkIfExists = true;
+        }
+        if(!checkIfExists) {
+            profiles[newUserId].self = msg.sender;
+        }
+        userIds.increment();
     }
 
     /// @dev increment the following tag of the profile performing the action, and the follower tag of the profile that user wants to follow

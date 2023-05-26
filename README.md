@@ -1,13 +1,27 @@
-# Sample Hardhat Project
+# NFT Marketplace app
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This project combines the power of Flutter, a versatile cross-platform development framework, with Solidity, the programming language of Ethereum smart contracts, to create a robust and efficient NFT marketplace ERC-5643 standards.
 
-Try running some of the following tasks:
+## Author
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
+- [@mobtereststudio](https://www.youtube.com/@mobtereststudio)
+
+## Deployment
+
+To deploy this project run
+
+```bash
+  npx hardhat node
+  npx hardhat compile
+  npx hardhat run --network localhost scripts/deploy.js
 ```
+
+# Hi, I'm Joy! 👋
+
+
+## 🔗 Links
+[![linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://katherineoelsner.com/)
+
+## Support
+
+For support, email mobterest@gmail.com or join the Slack channel.
